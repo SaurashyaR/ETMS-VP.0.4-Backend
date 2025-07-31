@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,9 +8,274 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  name     String
-  email    String @unique
-  password String
-  createdAt DateTime @default(now())
+  id                  Int                   @id @default(autoincrement())
+  email               String                @unique
+  password            String
+  role                Role                  @default(GUEST)
+  firstName           String?
+  lastName            String?
+  mobileNumber        String?               @db.VarChar(20)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  organizerProfile    OrganizerProfile?
+  payments            Payment[]
+  complimentaryTickets ComplimentaryTicket[]
+  auditLogs           AuditLog[]
+  reservations        Reservation[]
+}
+
+enum Role {
+  ADMIN
+  ORGANIZER
+  GUEST
+}
+
+enum EventStatus {
+  UPCOMING
+  NOWSHOWING
+}
+
+model OrganizerProfile {
+  id                  Int                   @id @default(autoincrement())
+  userId              Int                   @unique
+  organizerName       String
+  accountId           String                @unique @db.VarChar(20)
+  logo                String?
+  isVerified          Boolean               @default(false)
+  verifiedOn          DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  user                User                  @relation(fields: [userId], references: [id])
+  documents           OrganizerDocument[]
+  events              Event[]
+}
+
+model OrganizerDocument {
+  id                  Int                   @id @default(autoincrement())
+  organizerId         Int
+  type                String
+  fileUrl             String
+  uploadedAt          DateTime              @default(now())
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  organizer           OrganizerProfile      @relation(fields: [organizerId], references: [id])
+}
+
+model Location {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  address             String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  events              Event[]
+}
+
+model Artist {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  biography           String?
+  photoUrl            String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  eventArtists        EventArtist[]
+}
+
+model Event {
+  id                  Int                   @id @default(autoincrement())
+  organizerId         Int
+  locationId          Int
+  name                String
+  description         String?
+  eventDate           DateTime
+  eventTime           DateTime
+  doorOpeningTime     DateTime?
+  baseTicketPrice     Decimal               @db.Decimal(10, 2)
+  eventPhoto          String?
+  termsAndConditions  String[]
+  status              EventStatus           @default(UPCOMING)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  organizer           OrganizerProfile      @relation(fields: [organizerId], references: [id])
+  location            Location              @relation(fields: [locationId], references: [id])
+  ticketTypes         TicketType[]
+  complimentaryTickets ComplimentaryTicket[]
+  eventArtists        EventArtist[]
+  promotions          Promotion[]
+  reservations        Reservation[]
+}
+
+model EventArtist {
+  id                  Int                   @id @default(autoincrement())
+  eventId             Int
+  artistId            Int
+  role                String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  event               Event                 @relation(fields: [eventId], references: [id])
+  artist              Artist                @relation(fields: [artistId], references: [id])
+
+  @@unique([eventId, artistId, role], name: "event_artist_role_unique")
+}
+
+model TicketType {
+  id                  Int                   @id @default(autoincrement())
+  eventId             Int
+  name                String
+  description         String?
+  price               Decimal               @db.Decimal(10, 2)
+  totalQuantity       Int
+  availableQuantity   Int
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  event               Event                 @relation(fields: [eventId], references: [id])
+  tickets             Ticket[]
+  complimentaryTickets ComplimentaryTicket[]
+}
+
+model Ticket {
+  id                  Int                   @id @default(autoincrement())
+  ticketTypeId        Int
+  qrCode              String?               @unique @db.VarChar(50)
+  isScanned           Boolean               @default(false)
+  reservationId       Int?
+  scannedAt           DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  reservation         Reservation?        @relation(fields: [reservationId], references: [id])
+  ticketType          TicketType            @relation(fields: [ticketTypeId], references: [id])
+}
+
+model Payment {
+  id                  Int                   @id @default(autoincrement())
+  reservationId       Int
+  gateway             String?
+  transactionRef      String?               @unique
+  amount              Decimal               @db.Decimal(10, 2)
+  status              PaymentStatus         @default(PENDING)
+  paidAt              DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  reservation         Reservation          @relation(fields: [reservationId], references: [id])
+  user                User?                 @relation(fields: [createdBy], references: [id])
+}
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model ComplimentaryTicket {
+  id                  Int                   @id @default(autoincrement())
+  eventId             Int
+  ticketTypeId        Int
+  requestedBy         Int
+  recipientName       String
+  recipientEmail      String
+  quantity            Int
+  reason              String?
+  status              String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  event               Event                 @relation(fields: [eventId], references: [id])
+  ticketType          TicketType            @relation(fields: [ticketTypeId], references: [id])
+  user                User                  @relation(fields: [requestedBy], references: [id])
+}
+
+model Promotion {
+  id                  Int                   @id @default(autoincrement())
+  eventId             Int
+  title               String
+  description         String?
+  bannerImage         String?
+  startDate           DateTime
+  endDate             DateTime
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  event               Event                 @relation(fields: [eventId], references: [id])
+}
+
+model AuditLog {
+  id                  Int                   @id @default(autoincrement())
+  userId              Int
+  action              String
+  timestamp           DateTime              @default(now())
+
+  user                User                  @relation(fields: [userId], references: [id])
+}
+
+model Reservation {
+  id                  Int                   @id @default(autoincrement())
+  userId              Int
+  eventId             Int
+  status              ReservationStatus     @default(PENDING)
+  expiresAt           DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           Int?
+  updatedBy           Int?
+  isActive            Boolean               @default(true)
+
+  user                User                  @relation(fields: [userId], references: [id])
+  event               Event                 @relation(fields: [eventId], references: [id])
+  payments            Payment[]
+  tickets             Ticket[]
+
+  @@index([userId])
+  @@index([eventId])
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
 }
