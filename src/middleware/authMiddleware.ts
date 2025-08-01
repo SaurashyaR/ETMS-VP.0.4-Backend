@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
-import { AuthRequest } from "../types/globalTypes";
-import { Role } from "@prisma/client";
+import { AuthRequest, Roles } from "../types/globalTypes";
 
 class AuthMiddleware {
   async isAuthenticated(
@@ -44,7 +43,7 @@ class AuthMiddleware {
             });
             return;
           }
-          req.user = userData;
+          req.user = { ...userData, role: userData.role as Roles };
           next();
         } catch (error) {
           res.status(500).json({
@@ -55,12 +54,12 @@ class AuthMiddleware {
     );
   }
 
-  allowTo(...roles: Role[]) {
+  allowTo(...roles: Roles[]) {
     return (req: AuthRequest, res: Response, next: NextFunction) => {
-      let userRole = req?.user?.role as Role;
+      let userRole = req?.user?.role as Roles;
       if (!roles.includes(userRole)) {
         res.status(403).json({
-          message: "You don'thave permission",
+          message: "You don't have permission",
         });
       } else {
         next();

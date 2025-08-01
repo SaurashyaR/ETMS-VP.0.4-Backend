@@ -1,11 +1,11 @@
-import { Role } from "@prisma/client";
+import { Roles } from "./globalTypes";
 export interface RegisterData {
   email: string;
   password: string;
   firstName: string;
   lastName?: string;
   mobileNumber: string;
-  role?: Role;
+  role?: Roles;
 }
 
 export interface LoginData {
