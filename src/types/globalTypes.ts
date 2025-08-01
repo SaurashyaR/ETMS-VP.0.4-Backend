@@ -24,3 +24,8 @@ export enum Roles {
   ORGANIZER = "ORGANIZER",
   GUEST = "GUEST",
 }
+
+export interface AuditData {
+  userId: string;
+  action: string;
+}

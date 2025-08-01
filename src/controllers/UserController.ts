@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { LoginData, RegisterData } from "../types/userTypes";
 import prisma from "../config/prisma";
+import { AuthRequest } from "../types/globalTypes";
 
 class UserController {
   async registerUser(req: Request, res: Response): Promise<void> {
@@ -145,6 +146,37 @@ class UserController {
       data: {
         token,
         user: userData,
+      },
+    });
+  }
+
+  async getYourProfile(req: AuthRequest, res: Response): Promise<void> {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(400).json({
+        message: "No userId found",
+      });
+      return;
+    }
+    const userFound = await prisma.user.findMany({
+      where: {
+        id: userId,
+      },
+    });
+    if (userFound.length === 0) {
+      res.status(404).json({
+        message: "No user found",
+      });
+      return;
+    }
+    res.status(200).json({
+      message: "User fetched successfully",
+      data: userFound,
+    });
+    await prisma.auditLog.create({
+      data: {
+        userId: userId,
+        action: "USER_PROFILE_FETCHED",
       },
     });
   }

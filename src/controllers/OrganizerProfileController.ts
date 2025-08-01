@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types/globalTypes";
 import prisma from "../config/prisma";
 import bcrypt from "bcrypt";
-
 interface OrganizationRegistrationData {
   email: string;
   password: string;

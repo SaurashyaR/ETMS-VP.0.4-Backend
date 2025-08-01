@@ -7,9 +7,10 @@ import { Roles } from "../types/globalTypes";
 const router = express.Router();
 
 router
-  .route("/create")
+  .route("/")
   .post(
     authMiddleware.isAuthenticated,
     OrganizerProfileController.createOrganizerProfile
   );
+
 export default router;
